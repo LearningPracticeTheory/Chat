@@ -22,6 +22,7 @@ public class ChatClient extends JFrame {
 	JPanel centerR = new JPanel();
 	JList<String> list = null;
 	
+	String name = null;
 	Socket s = null;
 	boolean bConnect = false;
 	PrintStream ps = null;
@@ -31,6 +32,7 @@ public class ChatClient extends JFrame {
 	}
 	
 	ChatClient() {
+		setName();
 		setSize(500, 400);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -54,11 +56,12 @@ public class ChatClient extends JFrame {
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpSouth, BorderLayout.SOUTH);
 		setVisible(true);
-
-		try {
+		
+		try {			
 			s = new Socket("localhost", 1289);
 			bConnect = true;
 			ps = new PrintStream(s.getOutputStream());
+			ps.println(getName());
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -81,9 +84,17 @@ public class ChatClient extends JFrame {
 
 //			String str = in.nextLine();
 //			ps.println(str);
-	
+		
 	}
 
+	public void setName() {
+		name = JOptionPane.showInputDialog(null);
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
 	class ServerInfo implements Runnable {
 		
 		Socket s = null;

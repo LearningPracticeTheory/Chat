@@ -16,15 +16,17 @@ public class ChatServer extends JFrame {
 	JTextArea jtaMessage = new JTextArea();
 	JPanel jpCenter =  new JPanel();
 	JPanel jpEast = new JPanel();
+	JPanel jpList = new JPanel();
 	JLabel jlMessage = new JLabel("Clients' Messages");
 	JLabel jlClients = new JLabel("Clients");
 	JButton jbGod = new JButton("God mode");
-	JList<String> list = null;
 	Vector<String> v = new Vector<String>();
+	JList<String> list = new JList<String>(v);
 	JScrollPane scroll = null;
 	ServerSocket ss = null;
 	Socket s = null;
 	Thread t = null;
+	Scanner in = null;
 	boolean bConnect = false;
 	ArrayList<Clients> al = new ArrayList<Clients>();
 	
@@ -39,18 +41,19 @@ public class ChatServer extends JFrame {
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
 		jpEast.setLayout(new BorderLayout());
+		jpList.setLayout(new BorderLayout());
 		
 		jtaMessage.setLineWrap(true);
 		scroll = new JScrollPane(jtaMessage);
 		jlMessage.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
 		jlClients.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
-		list = new JList<String>(v);
 		
+		jpList.add(list, BorderLayout.CENTER);
 		jpCenter.add(jlMessage, BorderLayout.NORTH);
 		jpCenter.add(scroll, BorderLayout.CENTER);
 		jpEast.add(jlClients, BorderLayout.NORTH);
 		jpEast.add(jbGod, BorderLayout.SOUTH);
-		jpEast.add(new JScrollPane(list), BorderLayout.CENTER);
+		jpEast.add(jpList, BorderLayout.CENTER);
 		
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpEast, BorderLayout.EAST);
@@ -69,11 +72,10 @@ public class ChatServer extends JFrame {
 				s = ss.accept();
 //System.out.println("A client connect");
 				jtaMessage.append("A client connect\n");
-				Clients cs = new Clients(s);
+//System.out.println(in.nextLine());
+				Clients cs = new Clients(s, v);
 				al.add(cs);
-				t = new Thread(cs);
-				t.start();
-				v.addElement(t.getName());
+				cs.start();
 			}
 		} catch(IOException e) {
 			bConnect = false;
@@ -89,19 +91,31 @@ public class ChatServer extends JFrame {
 		
 	}
 	
-	class Clients implements Runnable {
+	class Clients extends Thread {
 		
 		Socket s = null;
 		Scanner in = null;
 		boolean flag = false;
+		Vector<String> v = null;
 		PrintStream ps = null;
 		
-		Clients(Socket s) {
+		Clients(Socket s, Vector<String> v) {
 			this.s = s;
+			this.v = v;
 			flag = true;
 			try {
 				in = new Scanner(s.getInputStream());
 				ps = new PrintStream(s.getOutputStream());
+				String str = in.nextLine();
+				setName(str);
+				jpList.remove(list);
+				jpList.setVisible(false);
+				v.addElement(getName());
+				list = new JList<String>(v);
+				jpList.add(list, BorderLayout.CENTER);
+				jpList.setVisible(true);
+				jpList.repaint();
+//System.out.println(str + getName() + v);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -110,7 +124,7 @@ public class ChatServer extends JFrame {
 		public void run() {
 			while(in.hasNext()) {
 //				System.out.println(in.nextLine());
-				String str = in.nextLine();
+				String str = getName() + ": " + in.nextLine();
 				jtaMessage.append(str + "\n");
 				jtaMessage.selectAll();
 				jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
