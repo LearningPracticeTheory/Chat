@@ -11,7 +11,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.Vector;
-
 import javax.swing.*;
 
 public class ChatClient extends JFrame 
@@ -20,16 +19,14 @@ implements ActionListener{
 	private static final long serialVersionUID = 1L;
 	JTextArea jtaMessage = new JTextArea();
 	JTextField jtf = new JTextField();
-	JLabel jlClients = new JLabel("Friends");
 	JLabel jlName = null;
-	
+	JLabel jlClients = new JLabel("Friends");	
 	JPanel jpCenter = new JPanel();
 	JPanel centerL = new JPanel();
 	JPanel centerR = new JPanel();
 	JPanel jpList = new JPanel();
 	JPanel jpSouth = new JPanel();
 	JPanel southR = new JPanel();
-	
 	JScrollPane scrollList = null;
 	JButton send = new JButton(" Send ");
 	JButton cancel = new JButton("Cancel");
@@ -39,8 +36,8 @@ implements ActionListener{
 	
 	String name = null;
 	Socket s = null;
-	boolean bConnect = false;
 	PrintStream ps = null;
+	boolean bConnect = false;
 	final String clientIdentify = "#@$";
 	final String clientQuit = "$@#";
 	final String shutDownIdentify = "@#$";
@@ -53,24 +50,6 @@ implements ActionListener{
 		setName();
 		setSize(500, 400);
 		setLocationRelativeTo(null);
-		
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				ps.println(clientQuit);
-				ps.flush();
-				if(ps != null) ps.close();
-					try {
-						if(s != null) s.close();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-				System.exit(0);
-			}
-		});
-		
-		send.addActionListener(this);
-		cancel.addActionListener(this);
-		
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
 		centerL.setLayout(new BorderLayout());
@@ -86,8 +65,7 @@ implements ActionListener{
 		
 		centerL.add(jlName, BorderLayout.NORTH);
 		centerL.add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
-		centerR.add(jlClients, BorderLayout.NORTH);
-		
+		centerR.add(jlClients, BorderLayout.NORTH);		
 		scrollList = new JScrollPane(list);
 		jpList.add(scrollList, BorderLayout.CENTER);
 		centerR.add(jpList, BorderLayout.CENTER);
@@ -99,13 +77,29 @@ implements ActionListener{
 		
 		jpCenter.add(centerL, BorderLayout.CENTER);
 		jpCenter.add(centerR, BorderLayout.EAST);
-		
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpSouth, BorderLayout.SOUTH);
+
+		jtf.requestFocus(true);
 		setVisible(true);
 		
-		jtf.requestFocus(true);
-		
+		jtf.addActionListener(this);
+		send.addActionListener(this);
+		cancel.addActionListener(this);
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				ps.println(clientQuit);
+				ps.flush();
+				if(ps != null) ps.close();
+				try {
+					if(s != null) s.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				System.exit(0);
+			}
+		});
+
 		try {
 			s = new Socket("localhost", 1289);
 			bConnect = true;
@@ -120,11 +114,6 @@ implements ActionListener{
 		
 		ServerInfo sInfo = new ServerInfo(s);
 		new Thread(sInfo).start();
-		
-		jtf.addActionListener(this);
-
-//			String str = in.nextLine();
-//			ps.println(str);
 		
 	}
 
@@ -182,33 +171,34 @@ implements ActionListener{
 		
 		public void run() {
 			while(in.hasNext()) {
-//System.out.println(in.nextLine());
 				String str = in.nextLine();
-				if(str.startsWith(clientIdentify)) {
-//System.out.println("if " + str);
-					str = str.substring(clientIdentify.length());
-					if(v.isEmpty() || !v.contains(str)) {
-						addClients(str);					
-					}
-				} else if(str.startsWith(clientQuit)) {
-					str = str.substring(clientQuit.length());
-					deleteClient(str);
-				} else if(str.equals(shutDownIdentify)) {
-					jtaMessage.append("***Server Shutdown***\n");
-					jtaMessage.append("Can not provice services");
-					jtaMessage.append("Quit After 3 Second\n");
-					try {
-						Thread.sleep(1000);
-						System.exit(0);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				} else {
-					jtaMessage.append(str + "\n");
-//System.out.println("else " + str);
-					jtaMessage.selectAll();
-					jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
+				identify(str);
+			}
+		}
+
+		public void identify(String str) {
+			if(str.startsWith(clientIdentify)) {
+				str = str.substring(clientIdentify.length());
+				if(v.isEmpty() || !v.contains(str)) {
+					addClients(str);					
 				}
+			} else if(str.startsWith(clientQuit)) {
+				str = str.substring(clientQuit.length());
+				deleteClient(str);
+			} else if(str.equals(shutDownIdentify)) {
+				jtaMessage.append("***Server Shutdown***\n");
+				jtaMessage.append("Can not provice services");
+				jtaMessage.append("Quit After 3 Second\n");
+				try {
+					Thread.sleep(1000);
+					System.exit(0);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else {
+				jtaMessage.append(str + "\n");
+				jtaMessage.selectAll();
+				jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
 			}
 		}
 		
@@ -216,7 +206,6 @@ implements ActionListener{
 			jpList.setVisible(false);
 			jpList.remove(scrollList);
 			v.addElement(str);
-//System.out.println(v + str);
 			list = new JList<String>(v);
 			scrollList = new JScrollPane(list);
 			jpList.add(scrollList, BorderLayout.CENTER);

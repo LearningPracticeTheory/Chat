@@ -7,18 +7,17 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.ServerSocket;
+import java.io.FileNotFoundException;
 import java.net.Socket;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
 import java.util.Vector;
-
 import javax.swing.*;
 
 public class ChatServer extends JFrame 
@@ -38,42 +37,33 @@ implements ActionListener {
 	JScrollPane scrollList = null;
 	ServerSocket ss = null;
 	Socket s = null;
-	Thread t = null;
 	Scanner in = null;
-	PrintStream ps = null;
-	boolean bConnect = false;
-	ArrayList<Clients> al = new ArrayList<Clients>();
-	File f = new File("log.txt");
 	Calendar cal = null;
-	String time = null;
+	PrintStream ps = null;
 	BufferedReader br = null;
 	BufferedWriter bw = null;
+	File f = new File("log.txt");
+	ArrayList<Clients> al = new ArrayList<Clients>();
+	String time = null;
 	final String clientIdentify = "#@$";
 	final String clientQuit = "$@#";
 	final String shutDownIdentify = "@#$";
+	boolean bConnect = false;
 	
 	public static void main(String args[]) {
 		new ChatServer();
 	}
 	
 	ChatServer() {
+		init();
+	}
+	
+	public void init() {
 		setSize(600, 400);
-//		setLocationRelativeTo(null);
-//		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				shutdown();
-			}
-		});
-		
-		jbGod.addActionListener(this);
-		
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
 		jpEast.setLayout(new BorderLayout());
 		jpList.setLayout(new BorderLayout());
-		
 		jtaMessage.setLineWrap(true);
 		scroll = new JScrollPane(jtaMessage);
 		jlMessage.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
@@ -87,10 +77,17 @@ implements ActionListener {
 		jpList.add(scrollList, BorderLayout.CENTER);
 		jpEast.add(jpList, BorderLayout.CENTER);
 		
+		jbGod.addActionListener(this);
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpEast, BorderLayout.EAST);
 		setVisible(true);
-				
+		
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				shutdown();
+			}
+		});
+		
 		try {
 			if(!f.exists()) {
 				f.createNewFile();
@@ -115,15 +112,11 @@ implements ActionListener {
 			while(bConnect) {
 				s = ss.accept();
 				ps = new PrintStream(s.getOutputStream());
-//System.out.println("A client connect");
-//System.out.println(in.nextLine());
 				Clients cs = new Clients(s);
 				al.add(cs);
 				
 				for(int i = 0; i < v.size(); i++) {
-//System.out.println(v.size());
 					for(Clients cd : al) {
-//System.out.println(v.get(i));
 						cd.send(clientIdentify + v.get(i));
 					}
 				}
@@ -132,7 +125,8 @@ implements ActionListener {
 			}
 		} catch(IOException e) {
 			bConnect = false;
-			System.out.println("Server shutdown");
+			write("");
+			write("---* Server ShutDown at " + getTimes() + "*---");
 		} finally {
 			shutdown();
 		}
@@ -161,7 +155,6 @@ implements ActionListener {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
 	}
 	
 	public String getTimes() {
@@ -195,7 +188,6 @@ implements ActionListener {
 				e.printStackTrace();
 			}
 			setSize(500, 400);
-			setLocationRelativeTo(null);
 			setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 			setVisible(true);
 		}
@@ -206,25 +198,18 @@ implements ActionListener {
 		
 		Socket s = null;
 		Scanner sin = null;
-		boolean flag = false;
 		PrintStream ps = null;
 		
 		Clients(Socket s) {
 			this.s = s;
-			flag = true;
 			try {
 				sin = new Scanner(s.getInputStream());
 				ps = new PrintStream(s.getOutputStream());
 				String str = sin.nextLine();
-//System.out.println(str);
 				setName(str);
 				jtaMessage.append(getName() + " connected!\n");
 				write("+ " + getName() + " connected at " + getTimes());
-				write("");
-//				System.out.println(time);
-				
 				addClients(str);
-//System.out.println(str + getName() + v);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -240,8 +225,6 @@ implements ActionListener {
 					}
 				} else {
 					String sendStr = getName() + ": " + getStr;
-//System.out.println(str);
-//					jtaMessage.append(sendStr + "\n");
 					write(sendStr);
 					write("\t# " + getTimes());
 					jtaMessage.selectAll();
@@ -272,7 +255,6 @@ implements ActionListener {
 		public void deleteClient(String str) {
 			jtaMessage.append(getName() + " Quit!\n");
 			write("- " + getName() + " quited at " + getTimes());
-			write("");
 			v.remove(getName());
 			repaint();
 		}
