@@ -1,16 +1,28 @@
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Scanner;
 import java.util.Vector;
 
 import javax.swing.*;
 
-public class ChatServer extends JFrame {
+public class ChatServer extends JFrame 
+implements ActionListener {
 	
 	public static final long serialVersionUID = 1L;
 	JTextArea jtaMessage = new JTextArea();
@@ -28,10 +40,17 @@ public class ChatServer extends JFrame {
 	Socket s = null;
 	Thread t = null;
 	Scanner in = null;
+	PrintStream ps = null;
 	boolean bConnect = false;
 	ArrayList<Clients> al = new ArrayList<Clients>();
+	File f = new File("log.txt");
+	Calendar cal = null;
+	String time = null;
+	BufferedReader br = null;
+	BufferedWriter bw = null;
 	final String clientIdentify = "#@$";
 	final String clientQuit = "$@#";
+	final String shutDownIdentify = "@#$";
 	
 	public static void main(String args[]) {
 		new ChatServer();
@@ -40,7 +59,16 @@ public class ChatServer extends JFrame {
 	ChatServer() {
 		setSize(600, 400);
 //		setLocationRelativeTo(null);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
+//		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				shutdown();
+			}
+		});
+		
+		jbGod.addActionListener(this);
+		
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
 		jpEast.setLayout(new BorderLayout());
@@ -62,6 +90,18 @@ public class ChatServer extends JFrame {
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpEast, BorderLayout.EAST);
 		setVisible(true);
+				
+		try {
+			if(!f.exists()) {
+				f.createNewFile();
+			}
+			br = new BufferedReader(new FileReader(f));
+			bw = new BufferedWriter(new FileWriter(f, true));
+		} catch(FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		try {
 			ss = new ServerSocket(1289);
@@ -74,8 +114,8 @@ public class ChatServer extends JFrame {
 		try {
 			while(bConnect) {
 				s = ss.accept();
+				ps = new PrintStream(s.getOutputStream());
 //System.out.println("A client connect");
-				jtaMessage.append("A client connect\n");
 //System.out.println(in.nextLine());
 				Clients cs = new Clients(s);
 				al.add(cs);
@@ -92,14 +132,72 @@ public class ChatServer extends JFrame {
 			}
 		} catch(IOException e) {
 			bConnect = false;
-			e.printStackTrace();
+			System.out.println("Server shutdown");
 		} finally {
+			shutdown();
+		}
+		
+	}
+	
+	public void shutdown() {
+		for(Clients cs : al) {
+			cs.ps.println(shutDownIdentify);
+		}
+		try {
+			if(in != null) in.close();
+			if(ps != null) ps.close();
+			if(ss != null) ss.close();
+			if(s != null) s.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void write(String str) {
+		try {
+			bw.write(str);
+			bw.newLine();
+			bw.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public String getTimes() {
+		cal = Calendar.getInstance();
+		time = cal.getTime().toString();
+		return time;
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		new GodDialog(this, "God mode", true);
+	}
+	
+	class GodDialog extends JDialog {
+
+		private static final long serialVersionUID = 1L;
+		JTextArea text = new JTextArea();
+		String log = null;
+		
+		GodDialog(JFrame jf, String title, boolean flag) {
+			super(jf, title, flag);
+			text.setFont(new Font("¿¬Ìå", Font.PLAIN, 14));
+			setLayout(new BorderLayout());
+			add(new JScrollPane(text), BorderLayout.CENTER);
 			try {
-				if(ss != null) ss.close();
-				if(s != null) s.close();
+				while((log = br.readLine()) != null) {
+					text.append(log + "\n");
+					text.selectAll();
+					text.setCaretPosition(text.getSelectedText().length() - 1);
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			setSize(500, 400);
+			setLocationRelativeTo(null);
+			setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+			setVisible(true);
 		}
 		
 	}
@@ -120,6 +218,11 @@ public class ChatServer extends JFrame {
 				String str = sin.nextLine();
 //System.out.println(str);
 				setName(str);
+				jtaMessage.append(getName() + " connected!\n");
+				write("+ " + getName() + " connected at " + getTimes());
+				write("");
+//				System.out.println(time);
+				
 				addClients(str);
 //System.out.println(str + getName() + v);
 			} catch (IOException e) {
@@ -132,10 +235,15 @@ public class ChatServer extends JFrame {
 				String getStr = sin.nextLine();
 				if(getStr.startsWith(clientQuit)) {
 					deleteClient(getName());
+					for(Clients cs : al) {
+						cs.send(clientQuit + getName());
+					}
 				} else {
 					String sendStr = getName() + ": " + getStr;
 //System.out.println(str);
-					jtaMessage.append(sendStr + "\n");
+//					jtaMessage.append(sendStr + "\n");
+					write(sendStr);
+					write("\t# " + getTimes());
 					jtaMessage.selectAll();
 					jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
 					for(Clients cs : al) {
@@ -162,7 +270,9 @@ public class ChatServer extends JFrame {
 		}
 		
 		public void deleteClient(String str) {
-			jtaMessage.append("A client quit\n");
+			jtaMessage.append(getName() + " Quit!\n");
+			write("- " + getName() + " quited at " + getTimes());
+			write("");
 			v.remove(getName());
 			repaint();
 		}

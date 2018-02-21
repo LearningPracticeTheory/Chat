@@ -1,5 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -13,21 +14,28 @@ import java.util.Vector;
 
 import javax.swing.*;
 
-public class ChatClient extends JFrame {
+public class ChatClient extends JFrame 
+implements ActionListener{
 
 	private static final long serialVersionUID = 1L;
 	JTextArea jtaMessage = new JTextArea();
 	JTextField jtf = new JTextField();
-	JLabel jlMessage = new JLabel("Messages");
 	JLabel jlClients = new JLabel("Friends");
+	JLabel jlName = null;
+	
 	JPanel jpCenter = new JPanel();
-	JPanel jpSouth = new JPanel();
 	JPanel centerL = new JPanel();
 	JPanel centerR = new JPanel();
 	JPanel jpList = new JPanel();
+	JPanel jpSouth = new JPanel();
+	JPanel southR = new JPanel();
+	
+	JScrollPane scrollList = null;
+	JButton send = new JButton(" Send ");
+	JButton cancel = new JButton("Cancel");
+
 	Vector<String> v = new Vector<String>();
 	JList<String> list = new JList<String>(v);
-	JScrollPane scrollList = null;
 	
 	String name = null;
 	Socket s = null;
@@ -35,6 +43,7 @@ public class ChatClient extends JFrame {
 	PrintStream ps = null;
 	final String clientIdentify = "#@$";
 	final String clientQuit = "$@#";
+	final String shutDownIdentify = "@#$";
 	
 	public static void main(String args[]) {
 		new ChatClient();
@@ -59,31 +68,43 @@ public class ChatClient extends JFrame {
 			}
 		});
 		
+		send.addActionListener(this);
+		cancel.addActionListener(this);
+		
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
-		jpSouth.setLayout(new BorderLayout());
 		centerL.setLayout(new BorderLayout());
 		centerR.setLayout(new BorderLayout());
 		jpList.setLayout(new BorderLayout());
+		jpSouth.setLayout(new BorderLayout());
+		southR.setLayout(new GridLayout(1, 2));
 		
-		jlMessage.setFont(new Font("楷体", Font.BOLD, 16));
 		jlClients.setFont(new Font("楷体", Font.BOLD, 16));
+		jlName.setFont(new Font("楷体", Font.PLAIN, 16));
+		send.setFont(new Font("楷体", Font.PLAIN, 14));
+		cancel.setFont(new Font("楷体", Font.PLAIN, 14));
 		
-		centerL.add(jlMessage, BorderLayout.NORTH);
+		centerL.add(jlName, BorderLayout.NORTH);
 		centerL.add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
 		centerR.add(jlClients, BorderLayout.NORTH);
+		
 		scrollList = new JScrollPane(list);
 		jpList.add(scrollList, BorderLayout.CENTER);
 		centerR.add(jpList, BorderLayout.CENTER);
-//		jpList.add(list, BorderLayout.CENTER);
-//		centerR.add(jpList, BorderLayout.CENTER);
+		
+		southR.add(send);
+		southR.add(cancel);
+		jpSouth.add(southR, BorderLayout.EAST);
+		jpSouth.add(jtf, BorderLayout.CENTER);
+		
 		jpCenter.add(centerL, BorderLayout.CENTER);
 		jpCenter.add(centerR, BorderLayout.EAST);
-		jpSouth.add(jtf, BorderLayout.SOUTH);
 		
 		add(jpCenter, BorderLayout.CENTER);
 		add(jpSouth, BorderLayout.SOUTH);
 		setVisible(true);
+		
+		jtf.requestFocus(true);
 		
 		try {
 			s = new Socket("localhost", 1289);
@@ -100,15 +121,7 @@ public class ChatClient extends JFrame {
 		ServerInfo sInfo = new ServerInfo(s);
 		new Thread(sInfo).start();
 		
-		jtf.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String str = jtf.getText();
-//System.out.println("jtf: " + str);
-				ps.println(str);
-				ps.flush();
-				jtf.setText("");
-			}
-		});
+		jtf.addActionListener(this);
 
 //			String str = in.nextLine();
 //			ps.println(str);
@@ -116,11 +129,41 @@ public class ChatClient extends JFrame {
 	}
 
 	public void setName() {
-		name = JOptionPane.showInputDialog(null);
+		name = JOptionPane.showInputDialog(null, "Enter Name", 
+				"Enter", JOptionPane.CLOSED_OPTION);
+		while(name.matches("\\s*")) {
+			name = JOptionPane.showInputDialog(null, "Name cannot be null",  
+					"Enter again", JOptionPane.CLOSED_OPTION);
+		}
+		jlName = new JLabel(name);
+	}
+	
+	public void send() {
+		String l = list.getSelectedValue();
+		if(l != null) {
+			jtf.setText(jtf.getText() + "@" + l + " ");
+		}
+		String str = jtf.getText();
+		if(!str.matches("\\s*")) {
+			ps.println(str);
+			ps.flush();
+			jtf.setText("");		
+		}
+		list.clearSelection();
 	}
 	
 	public String getName() {
 		return name;
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		if(e.getSource().equals(send)) {
+			send();
+		} else if(e.getSource().equals(jtf)) {
+			send();
+		} else if(e.getSource().equals(cancel)) {
+			jtf.setText("");
+		}
 	}
 	
 	class ServerInfo implements Runnable {
@@ -144,7 +187,22 @@ public class ChatClient extends JFrame {
 				if(str.startsWith(clientIdentify)) {
 //System.out.println("if " + str);
 					str = str.substring(clientIdentify.length());
-					addClients(str);
+					if(v.isEmpty() || !v.contains(str)) {
+						addClients(str);					
+					}
+				} else if(str.startsWith(clientQuit)) {
+					str = str.substring(clientQuit.length());
+					deleteClient(str);
+				} else if(str.equals(shutDownIdentify)) {
+					jtaMessage.append("***Server Shutdown***\n");
+					jtaMessage.append("Can not provice services");
+					jtaMessage.append("Quit After 3 Second\n");
+					try {
+						Thread.sleep(1000);
+						System.exit(0);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				} else {
 					jtaMessage.append(str + "\n");
 //System.out.println("else " + str);
@@ -154,7 +212,7 @@ public class ChatClient extends JFrame {
 			}
 		}
 		
-		public void addClients(String str) {		
+		public void addClients(String str) {	
 			jpList.setVisible(false);
 			jpList.remove(scrollList);
 			v.addElement(str);
@@ -164,6 +222,11 @@ public class ChatClient extends JFrame {
 			jpList.add(scrollList, BorderLayout.CENTER);
 			jpList.setVisible(true);
 			jpList.repaint();
+		}
+		
+		public void deleteClient(String str) {
+			v.remove(str);
+			repaint();
 		}
 		
 	}
