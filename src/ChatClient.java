@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
@@ -13,6 +14,14 @@ public class ChatClient extends JFrame {
 	private static final long serialVersionUID = 1L;
 	JTextArea jtaMessage = new JTextArea();
 	JTextField jtf = new JTextField();
+	JLabel jlMessage = new JLabel("Messages");
+	JLabel jlClients = new JLabel("Friends");
+	JPanel jpCenter = new JPanel();
+	JPanel jpSouth = new JPanel();
+	JPanel centerL = new JPanel();
+	JPanel centerR = new JPanel();
+	JList<String> list = null;
+	
 	Socket s = null;
 	boolean bConnect = false;
 	PrintStream ps = null;
@@ -26,9 +35,24 @@ public class ChatClient extends JFrame {
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
+		jpCenter.setLayout(new BorderLayout());
+		jpSouth.setLayout(new BorderLayout());
+		centerL.setLayout(new BorderLayout());
+		centerR.setLayout(new BorderLayout());
 		
-		add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
-		add(jtf, BorderLayout.SOUTH);
+		jlMessage.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
+		jlClients.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
+		
+		centerL.add(jlMessage, BorderLayout.NORTH);
+		centerL.add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
+		centerR.add(jlClients, BorderLayout.NORTH);
+		centerR.add(new JScrollPane(list), BorderLayout.CENTER);
+		jpCenter.add(centerL, BorderLayout.CENTER);
+		jpCenter.add(centerR, BorderLayout.EAST);
+		jpSouth.add(jtf, BorderLayout.SOUTH);
+		
+		add(jpCenter, BorderLayout.CENTER);
+		add(jpSouth, BorderLayout.SOUTH);
 		setVisible(true);
 
 		try {
