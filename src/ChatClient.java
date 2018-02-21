@@ -27,7 +27,7 @@ public class ChatClient extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
 		
-		add(jtaMessage, BorderLayout.CENTER);
+		add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
 		add(jtf, BorderLayout.SOUTH);
 		setVisible(true);
 
@@ -38,7 +38,8 @@ public class ChatClient extends JFrame {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("No Server, System exit");
+			System.exit(0);
 		}
 		
 		ServerInfo sInfo = new ServerInfo(s);
@@ -49,6 +50,7 @@ public class ChatClient extends JFrame {
 				String str = jtf.getText();
 //System.out.println(str);
 				ps.println(str);
+				ps.flush();
 				jtf.setText("");
 			}
 		});
@@ -77,6 +79,8 @@ public class ChatClient extends JFrame {
 //System.out.println(in.nextLine());
 				String str = in.nextLine();
 				jtaMessage.append(str + "\n");
+				jtaMessage.selectAll();
+				jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
 			}
 		}
 		
