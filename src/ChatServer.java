@@ -1,6 +1,7 @@
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Scanner;
 import javax.swing.*;
 
 public class ChatServer extends JFrame {
@@ -33,7 +34,8 @@ public class ChatServer extends JFrame {
 		while(bConnect) {
 			try {
 				s = ss.accept();
-System.out.println("A client connect");
+//System.out.println("A client connect");
+				jtaMessage.append("A client connect\n");
 				Clients cs = new Clients(s);
 				new Thread(cs).start();
 			} catch(IOException e) {
@@ -60,8 +62,10 @@ System.out.println("A client connect");
 		}
 		
 		public void run() {
-			while(flag) {
-				System.out.println(in.nextLine());
+			while(in.hasNext()) {
+//				System.out.println(in.nextLine());
+				String str = in.nextLine();
+				jtaMessage.append(str + "\n");
 			}
 		}
 		
