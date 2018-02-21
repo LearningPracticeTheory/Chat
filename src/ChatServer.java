@@ -23,12 +23,15 @@ public class ChatServer extends JFrame {
 	Vector<String> v = new Vector<String>();
 	JList<String> list = new JList<String>(v);
 	JScrollPane scroll = null;
+	JScrollPane scrollList = null;
 	ServerSocket ss = null;
 	Socket s = null;
 	Thread t = null;
 	Scanner in = null;
 	boolean bConnect = false;
 	ArrayList<Clients> al = new ArrayList<Clients>();
+	final String clientIdentify = "#@$";
+	final String clientQuit = "$@#";
 	
 	public static void main(String args[]) {
 		new ChatServer();
@@ -48,11 +51,12 @@ public class ChatServer extends JFrame {
 		jlMessage.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
 		jlClients.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
 		
-		jpList.add(list, BorderLayout.CENTER);
 		jpCenter.add(jlMessage, BorderLayout.NORTH);
 		jpCenter.add(scroll, BorderLayout.CENTER);
 		jpEast.add(jlClients, BorderLayout.NORTH);
 		jpEast.add(jbGod, BorderLayout.SOUTH);
+		scrollList = new JScrollPane(list);
+		jpList.add(scrollList, BorderLayout.CENTER);
 		jpEast.add(jpList, BorderLayout.CENTER);
 		
 		add(jpCenter, BorderLayout.CENTER);
@@ -73,8 +77,17 @@ public class ChatServer extends JFrame {
 //System.out.println("A client connect");
 				jtaMessage.append("A client connect\n");
 //System.out.println(in.nextLine());
-				Clients cs = new Clients(s, v);
+				Clients cs = new Clients(s);
 				al.add(cs);
+				
+				for(int i = 0; i < v.size(); i++) {
+//System.out.println(v.size());
+					for(Clients cd : al) {
+//System.out.println(v.get(i));
+						cd.send(clientIdentify + v.get(i));
+					}
+				}
+				
 				cs.start();
 			}
 		} catch(IOException e) {
@@ -94,27 +107,20 @@ public class ChatServer extends JFrame {
 	class Clients extends Thread {
 		
 		Socket s = null;
-		Scanner in = null;
+		Scanner sin = null;
 		boolean flag = false;
-		Vector<String> v = null;
 		PrintStream ps = null;
 		
-		Clients(Socket s, Vector<String> v) {
+		Clients(Socket s) {
 			this.s = s;
-			this.v = v;
 			flag = true;
 			try {
-				in = new Scanner(s.getInputStream());
+				sin = new Scanner(s.getInputStream());
 				ps = new PrintStream(s.getOutputStream());
-				String str = in.nextLine();
+				String str = sin.nextLine();
+//System.out.println(str);
 				setName(str);
-				jpList.remove(list);
-				jpList.setVisible(false);
-				v.addElement(getName());
-				list = new JList<String>(v);
-				jpList.add(list, BorderLayout.CENTER);
-				jpList.setVisible(true);
-				jpList.repaint();
+				addClients(str);
 //System.out.println(str + getName() + v);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -122,14 +128,19 @@ public class ChatServer extends JFrame {
 		}
 		
 		public void run() {
-			while(in.hasNext()) {
-//				System.out.println(in.nextLine());
-				String str = getName() + ": " + in.nextLine();
-				jtaMessage.append(str + "\n");
-				jtaMessage.selectAll();
-				jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
-				for(Clients cs : al) {
-					cs.send(str);
+			while(sin.hasNext()) {
+				String getStr = sin.nextLine();
+				if(getStr.startsWith(clientQuit)) {
+					deleteClient(getName());
+				} else {
+					String sendStr = getName() + ": " + getStr;
+//System.out.println(str);
+					jtaMessage.append(sendStr + "\n");
+					jtaMessage.selectAll();
+					jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
+					for(Clients cs : al) {
+						cs.send(sendStr);
+					}
 				}
 			}
 		}
@@ -137,6 +148,23 @@ public class ChatServer extends JFrame {
 		public void send(String str) {
 			ps.println(str);
 			ps.flush();
+		}
+		
+		public void addClients(String str) {
+			jpList.setVisible(false);
+			jpList.remove(scrollList);
+			v.addElement(str);
+			list = new JList<String>(v);
+			scrollList = new JScrollPane(list);
+			jpList.add(scrollList, BorderLayout.CENTER);
+			jpList.setVisible(true);
+			repaint();
+		}
+		
+		public void deleteClient(String str) {
+			jtaMessage.append("A client quit\n");
+			v.remove(getName());
+			repaint();
 		}
 		
 	}

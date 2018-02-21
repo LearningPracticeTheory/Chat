@@ -34,7 +34,6 @@ public class JListText extends JFrame {
 		v.addElement("D");
 		jp.add(jl, BorderLayout.CENTER);
 		jp.add(jb, BorderLayout.NORTH);
-//		add(jl, BorderLayout.CENTER);
 		add(jp, BorderLayout.CENTER);
 		System.out.println(v);
 		setVisible(true);
@@ -62,15 +61,16 @@ public class JListText extends JFrame {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-//******************************************	
-			jp.setVisible(false);
+//******************************************
 			jp.remove(jl);
+			jp.setVisible(false);
 			v.addElement("E");
 			jl = new JList<String>(v);
 			jp.add(jl, BorderLayout.CENTER);
 			jp.setVisible(true);
-			//jp.repaint();
+			jp.repaint();
 //******************************************
+
 			System.out.println(v);
 		}
 		

@@ -1,12 +1,16 @@
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
+import java.util.Vector;
+
 import javax.swing.*;
 
 public class ChatClient extends JFrame {
@@ -20,12 +24,17 @@ public class ChatClient extends JFrame {
 	JPanel jpSouth = new JPanel();
 	JPanel centerL = new JPanel();
 	JPanel centerR = new JPanel();
-	JList<String> list = null;
+	JPanel jpList = new JPanel();
+	Vector<String> v = new Vector<String>();
+	JList<String> list = new JList<String>(v);
+	JScrollPane scrollList = null;
 	
 	String name = null;
 	Socket s = null;
 	boolean bConnect = false;
 	PrintStream ps = null;
+	final String clientIdentify = "#@$";
+	final String clientQuit = "$@#";
 	
 	public static void main(String args[]) {
 		new ChatClient();
@@ -35,12 +44,27 @@ public class ChatClient extends JFrame {
 		setName();
 		setSize(500, 400);
 		setLocationRelativeTo(null);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				ps.println(clientQuit);
+				ps.flush();
+				if(ps != null) ps.close();
+					try {
+						if(s != null) s.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				System.exit(0);
+			}
+		});
+		
 		setLayout(new BorderLayout());
 		jpCenter.setLayout(new BorderLayout());
 		jpSouth.setLayout(new BorderLayout());
 		centerL.setLayout(new BorderLayout());
 		centerR.setLayout(new BorderLayout());
+		jpList.setLayout(new BorderLayout());
 		
 		jlMessage.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
 		jlClients.setFont(new Font("¿¬Ìå", Font.BOLD, 16));
@@ -48,7 +72,11 @@ public class ChatClient extends JFrame {
 		centerL.add(jlMessage, BorderLayout.NORTH);
 		centerL.add(new JScrollPane(jtaMessage), BorderLayout.CENTER);
 		centerR.add(jlClients, BorderLayout.NORTH);
-		centerR.add(new JScrollPane(list), BorderLayout.CENTER);
+		scrollList = new JScrollPane(list);
+		jpList.add(scrollList, BorderLayout.CENTER);
+		centerR.add(jpList, BorderLayout.CENTER);
+//		jpList.add(list, BorderLayout.CENTER);
+//		centerR.add(jpList, BorderLayout.CENTER);
 		jpCenter.add(centerL, BorderLayout.CENTER);
 		jpCenter.add(centerR, BorderLayout.EAST);
 		jpSouth.add(jtf, BorderLayout.SOUTH);
@@ -57,7 +85,7 @@ public class ChatClient extends JFrame {
 		add(jpSouth, BorderLayout.SOUTH);
 		setVisible(true);
 		
-		try {			
+		try {
 			s = new Socket("localhost", 1289);
 			bConnect = true;
 			ps = new PrintStream(s.getOutputStream());
@@ -75,7 +103,7 @@ public class ChatClient extends JFrame {
 		jtf.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String str = jtf.getText();
-//System.out.println(str);
+//System.out.println("jtf: " + str);
 				ps.println(str);
 				ps.flush();
 				jtf.setText("");
@@ -113,10 +141,29 @@ public class ChatClient extends JFrame {
 			while(in.hasNext()) {
 //System.out.println(in.nextLine());
 				String str = in.nextLine();
-				jtaMessage.append(str + "\n");
-				jtaMessage.selectAll();
-				jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
+				if(str.startsWith(clientIdentify)) {
+//System.out.println("if " + str);
+					str = str.substring(clientIdentify.length());
+					addClients(str);
+				} else {
+					jtaMessage.append(str + "\n");
+//System.out.println("else " + str);
+					jtaMessage.selectAll();
+					jtaMessage.setCaretPosition(jtaMessage.getSelectedText().length() - 1);
+				}
 			}
+		}
+		
+		public void addClients(String str) {		
+			jpList.setVisible(false);
+			jpList.remove(scrollList);
+			v.addElement(str);
+//System.out.println(v + str);
+			list = new JList<String>(v);
+			scrollList = new JScrollPane(list);
+			jpList.add(scrollList, BorderLayout.CENTER);
+			jpList.setVisible(true);
+			jpList.repaint();
 		}
 		
 	}
