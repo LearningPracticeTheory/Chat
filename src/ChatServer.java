@@ -1,6 +1,8 @@
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
 import javax.swing.*;
 
@@ -11,6 +13,7 @@ public class ChatServer extends JFrame {
 	ServerSocket ss = null;
 	Socket s = null;
 	boolean bConnect = false;
+	ArrayList<Clients> al = new ArrayList<Clients>();
 	
 	public static void main(String args[]) {
 		new ChatServer();
@@ -37,6 +40,7 @@ public class ChatServer extends JFrame {
 //System.out.println("A client connect");
 				jtaMessage.append("A client connect\n");
 				Clients cs = new Clients(s);
+				al.add(cs);
 				new Thread(cs).start();
 			} catch(IOException e) {
 				e.printStackTrace();
@@ -50,12 +54,14 @@ public class ChatServer extends JFrame {
 		Socket s = null;
 		Scanner in = null;
 		boolean flag = false;
+		PrintStream ps = null;
 		
 		Clients(Socket s) {
 			this.s = s;
 			flag = true;
 			try {
 				in = new Scanner(s.getInputStream());
+				ps = new PrintStream(s.getOutputStream());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -66,7 +72,14 @@ public class ChatServer extends JFrame {
 //				System.out.println(in.nextLine());
 				String str = in.nextLine();
 				jtaMessage.append(str + "\n");
+				for(Clients cs : al) {
+					cs.send(str);
+				}
 			}
+		}
+		
+		public void send(String str) {
+			ps.println(str);
 		}
 		
 	}

@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-//import java.util.*;
+import java.util.Scanner;
 import javax.swing.*;
 
 public class ChatClient extends JFrame {
@@ -15,7 +15,6 @@ public class ChatClient extends JFrame {
 	JTextField jtf = new JTextField();
 	Socket s = null;
 	boolean bConnect = false;
-//	Scanner in = null;
 	PrintStream ps = null;
 	
 	public static void main(String args[]) {
@@ -35,7 +34,6 @@ public class ChatClient extends JFrame {
 		try {
 			s = new Socket("localhost", 1289);
 			bConnect = true;
-//			in = new Scanner(System.in);
 			ps = new PrintStream(s.getOutputStream());
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -43,7 +41,9 @@ public class ChatClient extends JFrame {
 			e.printStackTrace();
 		}
 		
-			
+		ServerInfo sInfo = new ServerInfo(s);
+		new Thread(sInfo).start();
+		
 		jtf.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String str = jtf.getText();
@@ -52,11 +52,33 @@ public class ChatClient extends JFrame {
 				jtf.setText("");
 			}
 		});
-			
 
 //			String str = in.nextLine();
 //			ps.println(str);
 	
+	}
+
+	class ServerInfo implements Runnable {
+		
+		Socket s = null;
+		Scanner in = null;
+		
+		ServerInfo(Socket s) {
+			this.s = s;
+			try {
+				in = new Scanner(s.getInputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		public void run() {
+			while(in.hasNext()) {
+//System.out.println(in.nextLine());
+				String str = in.nextLine();
+				jtaMessage.append(str + "\n");
+			}
+		}
 		
 	}
 	
