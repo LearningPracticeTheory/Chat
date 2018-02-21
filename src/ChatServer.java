@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import javax.swing.*;
 
 public class ChatServer extends JFrame {
@@ -33,8 +34,34 @@ public class ChatServer extends JFrame {
 			try {
 				s = ss.accept();
 System.out.println("A client connect");
+				Clients cs = new Clients(s);
+				new Thread(cs).start();
 			} catch(IOException e) {
 				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	class Clients implements Runnable {
+		
+		Socket s = null;
+		Scanner in = null;
+		boolean flag = false;
+		
+		Clients(Socket s) {
+			this.s = s;
+			flag = true;
+			try {
+				in = new Scanner(s.getInputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		public void run() {
+			while(flag) {
+				System.out.println(in.nextLine());
 			}
 		}
 		
